@@ -216,6 +216,7 @@ function chair(x,z,rot){
 }
 
 // Department tables
+const OBST=[];
 const hallCenterX = 0;
 for (const [id,d] of Object.entries(DEPTS)){
   const [ax,az]=S(...d.a),[bx,bz]=S(...d.b);
@@ -253,6 +254,7 @@ for (const [id,d] of Object.entries(DEPTS)){
   // front point (where parent stands)
   const fx=cx+toward*(depth/2+1.3)*Math.cos(ang), fz=cz-toward*(depth/2+1.3)*Math.sin(ang);
   d.front=new THREE.Vector3(fx,0,fz); d.center=new THREE.Vector3(cx,0,cz); d.cloth=cloth; d.len=len;
+  OBST.push({type:'rect',cx,cz,ang,hl:len/2+.3,hw:depth/2+.42+.28});
   d.label=sprite(d.name, staff[id]?`${staff[id].length} معلمين`:'', d.color, (innerWidth/innerHeight<0.8)?4.3:5.0);
   // name banner on the aisle-facing side of the tablecloth
   { const c=document.createElement('canvas'); c.width=1024; c.height=150; const draw=()=>{ const x=c.getContext('2d'); x.clearRect(0,0,1024,150);
@@ -273,7 +275,7 @@ for (const [id,d] of Object.entries(DEPTS)){
 
 // Round tables with chairs in the aisle (waiting / hospitality)
 [[535,480],[550,815],[550,1100]].forEach(([px,py])=>{
-  const [x,z]=S(px,py);
+  const [x,z]=S(px,py); OBST.push({type:'circle',x,z,r:1.75});
   const t=new THREE.Mesh(new THREE.CylinderGeometry(1.0,1.0,.06,40),mat('#ffffff')); t.position.set(x,.76,z);
   const leg=new THREE.Mesh(new THREE.CylinderGeometry(.08,.3,.74,16),mat('#94a3b8')); leg.position.set(x,.37,z);
   [t,leg].forEach(m=>{m.castShadow=m.receiveShadow=true;scene.add(m);});
@@ -298,20 +300,79 @@ youM.rotation.x=Math.PI; youM.position.set(ENTRY.x,1.2,13.6); scene.add(youM);
 const pathGroup=new THREE.Group(); scene.add(pathGroup);
 const arrowGeo=new THREE.ConeGeometry(.22,.5,3); arrowGeo.rotateX(Math.PI/2);
 let pathCurve=null, arrows=[];
+/* Walking route: A* on a 0.25 m floor grid that avoids tables, chairs, the waiting tables and the stage */
+const G=0.25, GX0=-10.3, GZ0=-15.3, GW=Math.ceil(20.6/G), GH=Math.ceil(30.6/G), MARGIN=0.3;
+let BLOCK=null;
+function buildGrid(){
+  BLOCK=new Uint8Array(GW*GH);
+  const stageFront=-15.4+stageD;
+  for(let j=0;j<GH;j++) for(let i=0;i<GW;i++){
+    const x=GX0+(i+.5)*G, z=GZ0+(j+.5)*G; let b=0;
+    if(x<-10+MARGIN||x>10-MARGIN||z<-15.2) b=1;
+    else if(z<stageFront+MARGIN && x>sx1-2.4 && x<sx2+2.4) b=1;
+    else if(z>15.2 && Math.abs(x-ENTRY.x)>3.3) b=1;
+    else for(const o of OBST){
+      if(o.type==='circle'){ if(Math.hypot(x-o.x,z-o.z)<o.r+MARGIN){b=1;break;} }
+      else { const dx=x-o.cx, dz=z-o.cz; const lx=dx*Math.cos(o.ang)-dz*Math.sin(o.ang), lz=dx*Math.sin(o.ang)+dz*Math.cos(o.ang);
+        if(Math.abs(lx)<o.hw+MARGIN && Math.abs(lz)<o.hl+MARGIN){b=1;break;} }
+    }
+    BLOCK[j*GW+i]=b;
+  }
+}
+const cell=v=>[Math.max(0,Math.min(GW-1,Math.floor((v.x-GX0)/G))), Math.max(0,Math.min(GH-1,Math.floor((v.z-GZ0)/G)))];
+const free=(i,j)=>i>=0&&j>=0&&i<GW&&j<GH&&!BLOCK[j*GW+i];
+let REACH=null;
+function buildReach(){ REACH=new Uint8Array(GW*GH); const s=nearestFreeRaw(cell(ENTRY)); const q=[s]; REACH[s[1]*GW+s[0]]=1;
+  while(q.length){ const [i,j]=q.pop(); for(const [di,dj] of [[1,0],[-1,0],[0,1],[0,-1]]){ const ni=i+di,nj=j+dj; if(free(ni,nj)&&!REACH[nj*GW+ni]){REACH[nj*GW+ni]=1;q.push([ni,nj]);} } } }
+const reach=(i,j)=>free(i,j)&&REACH[j*GW+i];
+function nearestFreeRaw([i,j]){ if(free(i,j)) return [i,j];
+  for(let r=1;r<40;r++) for(let di=-r;di<=r;di++) for(let dj=-r;dj<=r;dj++){ if(Math.max(Math.abs(di),Math.abs(dj))!==r) continue; if(free(i+di,j+dj)) return [i+di,j+dj]; }
+  return [i,j]; }
+function nearestFree([i,j]){ if(reach(i,j)) return [i,j];
+  let best=null,bd=1e9; for(let r=1;r<60;r++){ for(let di=-r;di<=r;di++) for(let dj=-r;dj<=r;dj++){ if(Math.max(Math.abs(di),Math.abs(dj))!==r) continue; if(reach(i+di,j+dj)){ const dd=Math.hypot(di,dj); if(dd<bd){bd=dd;best=[i+di,j+dj];} } } if(best && r>bd+1) break; }
+  return best||[i,j]; }
+function astar(s,e){
+  const N=GW*GH, g=new Float32Array(N).fill(Infinity), from=new Int32Array(N).fill(-1), closed=new Uint8Array(N);
+  const open=[]; const push=(k,f)=>{ open.push([f,k]); let c=open.length-1; while(c>0){const p=(c-1)>>1; if(open[p][0]<=open[c][0])break; [open[p],open[c]]=[open[c],open[p]]; c=p;} };
+  const pop=()=>{ const top=open[0], last=open.pop(); if(open.length){ open[0]=last; let c=0; for(;;){ let l=2*c+1,r=l+1,m=c; if(l<open.length&&open[l][0]<open[m][0])m=l; if(r<open.length&&open[r][0]<open[m][0])m=r; if(m===c)break; [open[m],open[c]]=[open[c],open[m]]; c=m; } } return top; };
+  const sk=s[1]*GW+s[0], ek=e[1]*GW+e[0], h=(i,j)=>Math.hypot(i-e[0],j-e[1]);
+  g[sk]=0; push(sk,h(...s));
+  const D=[[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.414],[1,-1,1.414],[-1,1,1.414],[-1,-1,1.414]];
+  while(open.length){ const [,k]=pop(); if(closed[k]) continue; closed[k]=1; if(k===ek) break;
+    const i=k%GW, j=(k/GW)|0;
+    for(const [di,dj,c] of D){ const ni=i+di, nj=j+dj; if(!free(ni,nj)) continue; if(di&&dj&&(!free(i+di,j)||!free(i,j+dj))) continue;
+      const nk=nj*GW+ni, ng=g[k]+c; if(ng<g[nk]){ g[nk]=ng; from[nk]=k; push(nk,ng+h(ni,nj)); } } }
+  if(from[ek]<0 && ek!==sk) return null;
+  const out=[]; for(let k=ek;k>=0;k=from[k]){ out.push([k%GW,(k/GW)|0]); if(k===sk)break; } return out.reverse();
+}
+function lineFree(a,b){ const n=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])*3); for(let s=0;s<=n;s++){ const i=Math.round(a[0]+(b[0]-a[0])*s/n), j=Math.round(a[1]+(b[1]-a[1])*s/n); if(!free(i,j)) return false; } return true; }
+function route(from,to){
+  if(!BLOCK){ buildGrid(); buildReach(); }
+  const s=nearestFree(cell(from)), e=nearestFree(cell(to)); const raw=astar(s,e);
+  if(!raw) return [from.clone(),to.clone()];
+  const simp=[raw[0]]; let k=0; while(k<raw.length-1){ let m=raw.length-1; while(m>k+1 && !lineFree(raw[k],raw[m])) m--; simp.push(raw[m]); k=m; }
+  const pts=simp.map(([i,j])=>new THREE.Vector3(GX0+(i+.5)*G,0,GZ0+(j+.5)*G));
+  const ec=cell(to); const endPt= reach(...ec)? to.clone() : new THREE.Vector3(GX0+(e[0]+.5)*G,0,GZ0+(e[1]+.5)*G);
+  pts[0]=from.clone(); if(pts.length>1) pts[pts.length-1]=endPt; else pts.push(endPt);
+  // round the corners a little without leaving the free corridor
+  const out=[pts[0]];
+  for(let i=1;i<pts.length-1;i++){ const a=pts[i-1],b=pts[i],c=pts[i+1]; const r=Math.min(.6, a.distanceTo(b)/2.2, b.distanceTo(c)/2.2);
+    const p1=b.clone().add(a.clone().sub(b).setLength(r)), p2=b.clone().add(c.clone().sub(b).setLength(r));
+    for(let s=0;s<=4;s++){ const u=s/4; out.push(new THREE.Vector3().copy(p1).multiplyScalar((1-u)*(1-u)).add(b.clone().multiplyScalar(2*u*(1-u))).add(p2.clone().multiplyScalar(u*u))); } }
+  const last=pts[pts.length-1]; const res=out.filter((p,i)=>i===0||p.distanceTo(out[i-1])>.02); if(res[res.length-1].distanceTo(last)>.001) res.push(last); return res;
+}
 function showPath(d,target){ target=target||d.front;
   pathGroup.clear(); arrows=[];
-  const side=Math.sign(target.x-0.4)||1, laneX=0.45+side*2.25, fz=target.z;
-  const p=[ENTRY.clone(), new THREE.Vector3(ENTRY.x,0,12.6), new THREE.Vector3(laneX,0,11.2)];
-  if(fz<10.2) p.push(new THREE.Vector3(laneX,0,fz+0.9));
-  p.push(target.clone());
-  pathCurve=new THREE.CatmullRomCurve3(p,false,'centripetal',.2);
-  const tube=new THREE.Mesh(new THREE.TubeGeometry(pathCurve,120,.07,8,false),new THREE.MeshBasicMaterial({color:d.color,transparent:true,opacity:.55}));
+  const pts=route(ENTRY,target);
+  const cp=new THREE.CurvePath(); for(let i=1;i<pts.length;i++) cp.add(new THREE.LineCurve3(pts[i-1],pts[i]));
+  pathCurve=cp;
+  const tube=new THREE.Mesh(new THREE.TubeGeometry(pathCurve,Math.max(60,pts.length*8),.07,8,false),new THREE.MeshBasicMaterial({color:d.color,transparent:true,opacity:.55}));
   tube.position.y=.05; pathGroup.add(tube);
   const L=pathCurve.getLength(), n=Math.floor(L/1.1);
   const am=new THREE.MeshBasicMaterial({color:d.color});
   for(let i=0;i<n;i++){const a=new THREE.Mesh(arrowGeo,am); a.userData.u=i/n; pathGroup.add(a); arrows.push(a);}
   const end=new THREE.Mesh(new THREE.CylinderGeometry(.45,.45,.04,32),new THREE.MeshBasicMaterial({color:d.color}));
-  end.position.copy(target).setY(.03); pathGroup.add(end);
+  end.position.copy(pts[pts.length-1]).setY(.03); pathGroup.add(end);
 }
 
 /* ---------- Selection & camera ---------- */
