@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>خريطة قاعة اجتماع أولياء الأمور – مدرسة أحمد العدواني</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1a2b;--card:#ffffff;--ink:#14213d;--muted:#64748b;--line:#e2e8f0;--accent:#0e7c66;--accent2:#f4a261}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;font-family:'Cairo',system-ui,sans-serif;background:#dfe7ef;color:var(--ink)}
+#scene{position:fixed;inset:0}
+header{position:fixed;top:0;inset-inline:0;padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;background:linear-gradient(180deg,rgba(15,26,43,.92),rgba(15,26,43,.0));color:#fff;z-index:5;pointer-events:none}
+header h1{margin:0;font-size:17px;font-weight:800;line-height:1.35}
+header p{margin:2px 0 0;font-size:12.5px;opacity:.85}
+.tools{position:fixed;top:calc(env(safe-area-inset-top) + 74px);left:12px;display:flex;flex-direction:column;gap:8px;z-index:6}
+.tools button{width:44px;height:44px;border-radius:12px;border:0;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.18);font:700 12px Cairo;color:var(--ink);cursor:pointer}
+.tools button.on{background:var(--ink);color:#fff}
+#sheet{position:fixed;inset-inline:0;bottom:0;z-index:7;background:var(--card);border-radius:22px 22px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.22);max-height:62vh;display:flex;flex-direction:column;transition:transform .35s cubic-bezier(.2,.8,.2,1);padding-bottom:env(safe-area-inset-bottom)}
+#sheet.min{transform:translateY(calc(100% - 118px))}
+.grip{padding:8px 0 2px;display:flex;justify-content:center;cursor:pointer}
+.grip span{width:44px;height:5px;border-radius:9px;background:#cbd5e1}
+.tabs{display:flex;gap:6px;padding:6px 14px 10px}
+.tabs button{flex:1;border:0;padding:10px 6px;border-radius:12px;background:#f1f5f9;font:700 13.5px Cairo;color:var(--muted);cursor:pointer}
+.tabs button.on{background:var(--accent);color:#fff}
+.body{overflow:auto;padding:0 14px 16px;flex:1}
+.lbl{font-size:12.5px;color:var(--muted);font-weight:700;margin:4px 2px 6px}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.chip{border:1.5px solid var(--line);background:#fff;padding:7px 13px;border-radius:999px;font:700 14px Cairo;color:var(--ink);cursor:pointer}
+.chip.on{border-color:var(--accent);background:#e7f5f1;color:var(--accent)}
+.row{display:flex;align-items:center;gap:10px;padding:10px 10px;border:1px solid var(--line);border-radius:14px;margin-bottom:8px;cursor:pointer;background:#fff}
+.row:active{transform:scale(.99)}
+.row.sel{border-color:var(--accent);box-shadow:0 0 0 3px #0e7c6622}
+.dot{width:12px;height:38px;border-radius:6px;flex:none}
+.row .m{flex:1;min-width:0}
+.row .s{font-size:12.5px;color:var(--muted);font-weight:600}
+.row .t{font-size:15px;font-weight:800;line-height:1.35}
+.row .go{font-size:12px;font-weight:800;color:#fff;padding:6px 10px;border-radius:10px;white-space:nowrap}
+.row .off{font-size:11.5px;font-weight:700;color:#92400e;background:#fef3c7;padding:5px 9px;border-radius:10px;white-space:nowrap}
+input[type=search]{width:100%;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;font:600 15px Cairo;margin-bottom:10px;outline:none;direction:rtl}
+input[type=search]:focus{border-color:var(--accent)}
+.empty{color:var(--muted);text-align:center;padding:18px 6px;font-size:14px}
+.seats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:-2px 0 10px}
+.seat{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:#f8fafc;border-radius:11px;padding:7px 8px;font:700 13px Cairo;color:var(--ink);text-align:right;cursor:pointer}
+.seat i{font-style:normal;flex:none;width:24px;height:24px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px}
+.note{font-size:12px;color:var(--muted);background:#f8fafc;border-radius:12px;padding:9px 12px;margin-top:6px;line-height:1.7}
+#toast{position:fixed;top:calc(env(safe-area-inset-top) + 74px);right:12px;left:68px;z-index:6;background:#fff;border-radius:16px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:none;align-items:center;gap:10px}
+#toast.show{display:flex}
+#toast .dot{height:34px}
+#toast b{font-size:15px;display:block}
+#toast small{color:var(--muted);font-weight:600;font-size:12.5px}
+#toast button{margin-inline-start:auto;border:0;background:#f1f5f9;border-radius:10px;width:32px;height:32px;font-size:16px;cursor:pointer}
+#loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0f1a2b;color:#fff;font:700 16px Cairo;z-index:20;transition:opacity .4s}
+@media (min-width:900px){#sheet{inset-inline-start:auto;right:16px;bottom:16px;width:400px;border-radius:22px;max-height:calc(100vh - 120px)}#sheet.min{transform:none}.grip{display:none}#toast{right:432px;left:auto;width:340px}}
+</style>
+</head>
+<body>
+<div id="loading">جاري تجهيز القاعة…</div>
+<div id="scene"></div>
+<header><h1>قاعة اجتماع أولياء الأمور</h1><p>مدرسة أحمد العدواني الثانوية بنين · ٢٠٢٦/٢٠٢٧</p></header>
+<div class="tools">
+  <button id="b3d" class="on" title="منظور ثلاثي الأبعاد">3D</button>
+  <button id="btop" title="منظور من الأعلى">أعلى</button>
+  <button id="breset" title="إعادة">↺</button>
+</div>
+<div id="toast"><div class="dot"></div><div><b></b><small></small></div><button aria-label="إغلاق">✕</button></div>
+<div id="sheet">
+  <div class="grip"><span></span></div>
+  <div class="tabs">
+    <button data-tab="class" class="on">صف ابني</button>
+    <button data-tab="dept">الأقسام</button>
+    <button data-tab="search">بحث عن معلم</button>
+  </div>
+  <div class="body" id="body"></div>
+</div>
+
+<script>window.DATA = {"classes": {"10/1": [{"s": "التربية الإسلامية", "t": "محمد عبدالرحمن الحيان", "d": "islamic"}, {"s": "رياضيات", "t": "عبدالقادر رزق", "d": "math"}, {"s": "اللغة الإنجليزية", "t": "شريف محمد علان", "d": "english"}, {"s": "كيمياء", "t": "أسامة يوسف عبدالحي", "d": "chemphys"}, {"s": "أحياء", "t": "عبدالفتاح علي عثمان", "d": "bio"}, {"s": "اللغة العربية", "t": "محمود فوزي سليم", "d": "arabic"}, {"s": "تاريخ الكويت", "t": "علي محمد الجراف", "d": "history"}, {"s": "فيزياء", "t": "عبدالمنعم عبدالهادي", "d": "chemphys"}, {"s": "القرآن الكريم", "t": "محمد عبدالرحمن الحيان", "d": "islamic"}], "10/2": [{"s": "اللغة الإنجليزية", "t": "عماد الدين سمير مسعد", "d": "english"}, {"s": "فيزياء", "t": "طارق توفيق مريسات", "d": "chemphys"}, {"s": "رياضيات", "t": "ضياء أحمد نعيم الخطيب", "d": "math"}, {"s": "اللغة العربية", "t": "خالد فؤاد ياقوت عافية", "d": "arabic"}, {"s": "أحياء", "t": "عبدالفتاح علي عثمان", "d": "bio"}, {"s": "تاريخ الكويت", "t": "محمد موسى حبيب", "d": "philo"}, {"s": "القرآن الكريم", "t": "محمد عبدالرحمن الحيان", "d": "islamic"}, {"s": "كيمياء", "t": "أحمد جعفر هلال", "d": "chemphys"}, {"s": "التربية الإسلامية", "t": "محمد عبدالرحمن الحيان", "d": "islamic"}], "10/3": [{"s": "رياضيات", "t": "عبدالله عبدالتواب الدسوقي", "d": "math"}, {"s": "اللغة الإنجليزية", "t": "عبدالله مبارك بخيت", "d": "english"}, {"s": "كيمياء", "t": "أحمد صابر جاد", "d": "chemphys"}, {"s": "اللغة العربية", "t": "محمود فوزي سليم", "d": "arabic"}, {"s": "التربية الإسلامية", "t": "سليمان منصور الهولي", "d": "islamic"}, {"s": "فيزياء", "t": "علي عثمان علي محسن", "d": "chemphys"}, {"s": "تاريخ الكويت", "t": "عبدالرحمن عادل المنيس", "d": "philo"}, {"s": "أحياء", "t": "عبدالفتاح علي عثمان", "d": "bio"}, {"s": "القرآن الكريم", "t": "سليمان منصور الهولي", "d": "islamic"}], "10/4": [{"s": "فيزياء", "t": "سعيد بسام سعيد", "d": "chemphys"}, {"s": "القرآن الكريم", "t": "سليمان منصور الهولي", "d": "islamic"}, {"s": "رياضيات", "t": "محمد عباس محمود", "d": "math"}, {"s": "اللغة الإنجليزية", "t": "علي نعمان الشريف", "d": "english"}, {"s": "اللغة العربية", "t": "علي أسامة طاهر المزيدي", "d": "arabic"}, {"s": "تاريخ الكويت", "t": "محمد موسى حبيب", "d": "philo"}, {"s": "التربية الإسلامية", "t": "سليمان منصور الهولي", "d": "islamic"}, {"s": "أحياء", "t": "عبدالفتاح علي عثمان", "d": "bio"}, {"s": "كيمياء", "t": "أحمد صابر جاد", "d": "chemphys"}], "10/5": [{"s": "رياضيات", "t": "حسن شاكر", "d": "math"}, {"s": "اللغة العربية", "t": "شريف جمعة عبدالحميد", "d": "arabic"}, {"s": "تاريخ الكويت", "t": "محمد حسن السمين", "d": "philo"}, {"s": "أحياء", "t": "عبدالفتاح علي عثمان", "d": "bio"}, {"s": "اللغة الإنجليزية", "t": "علي نعمان الشريف", "d": "english"}, {"s": "كيمياء", "t": "أحمد صابر جاد", "d": "chemphys"}, {"s": "فيزياء", "t": "علي عثمان علي محسن", "d": "chemphys"}, {"s": "التربية الإسلامية", "t": "علي خالد القديري", "d": "islamic"}, {"s": "القرآن الكريم", "t": "علي خالد القديري", "d": "islamic"}], "10/6": [{"s": "اللغة العربية", "t": "شريف جمعة عبدالحميد", "d": "arabic"}, {"s": "فيزياء", "t": "طارق توفيق مريسات", "d": "chemphys"}, {"s": "رياضيات", "t": "صلاح صايل عامر", "d": "math"}, {"s": "تاريخ الكويت", "t": "محمد حسن السمين", "d": "philo"}, {"s": "اللغة الإنجليزية", "t": "محمود الطنطاوي", "d": "english"}, {"s": "كيمياء", "t": "أحمد جعفر هلال", "d": "chemphys"}, {"s": "أحياء", "t": "عبدالفتاح علي عثمان", "d": "bio"}, {"s": "القرآن الكريم", "t": "علي خالد القديري", "d": "islamic"}, {"s": "التربية الإسلامية", "t": "علي خالد القديري", "d": "islamic"}], "11 أدبي 1": [{"s": "اللغة العربية", "t": "زين العابدين محمود", "d": "arabic"}, {"s": "اللغة الإنجليزية", "t": "شريف محمد علان", "d": "english"}, {"s": "تاريخ", "t": "عبدالله علي عبدالعزيز", "d": "history"}, {"s": "اللغة الفرنسية", "t": "عماد عوض عطية", "d": "french"}, {"s": "الإحصاء", "t": "عبدالقادر رزق", "d": "math"}, {"s": "جغرافيا", "t": "علي محمد الجراف", "d": "history"}, {"s": "القرآن الكريم", "t": "عبدالرحمن مشعل النون", "d": "islamic"}, {"s": "التربية الإسلامية", "t": "عبدالرحمن مشعل النون", "d": "islamic"}, {"s": "علم النفس", "t": "حسين حسن الخميس", "d": "philo"}], "11 أدبي 2": [{"s": "علم النفس", "t": "حسين حسن الخميس", "d": "philo"}, {"s": "اللغة العربية", "t": "سامح عبدالعزيز قاسم", "d": "arabic"}, {"s": "جغرافيا", "t": "علي محمد الجراف", "d": "history"}, {"s": "التربية الإسلامية", "t": "محي الدين عبدالفتاح", "d": "islamic"}, {"s": "تاريخ", "t": "عبدالله علي عبدالعزيز", "d": "history"}, {"s": "الإحصاء", "t": "حسن شاكر", "d": "math"}, {"s": "اللغة الفرنسية", "t": "عماد عوض عطية", "d": "french"}, {"s": "اللغة الإنجليزية", "t": "محمد رياض الحو", "d": "english"}, {"s": "القرآن الكريم", "t": "أحمد رشاد السيد", "d": "islamic"}], "11 علمي 1": [{"s": "اللغة العربية", "t": "زين العابدين محمود", "d": "arabic"}, {"s": "جيولوجيا", "t": "حمد وليد صالح محمد", "d": "bio"}, {"s": "رياضيات", "t": "سمير رمضان نوفل", "d": "math"}, {"s": "اللغة الإنجليزية", "t": "محمد رياض الحو", "d": "english"}, {"s": "كيمياء", "t": "حسني أحمد فواز حسن", "d": "chemphys"}, {"s": "القرآن الكريم", "t": "عصمت عطا حامد", "d": "islamic"}, {"s": "فيزياء", "t": "طارق توفيق مريسات", "d": "chemphys"}, {"s": "أحياء", "t": "حسين عباس جوهر", "d": "bio"}, {"s": "زراعة", "t": "حمد وليد صالح محمد", "d": "bio"}, {"s": "التربية الإسلامية", "t": "عصمت عطا حامد", "d": "islamic"}], "11 علمي 2": [{"s": "اللغة العربية", "t": "سامح عبدالعزيز قاسم", "d": "arabic"}, {"s": "رياضيات", "t": "سمير رمضان نوفل", "d": "math"}, {"s": "اللغة الإنجليزية", "t": "عبدالله مبارك بخيت", "d": "english"}, {"s": "أحياء", "t": "حسين عباس جوهر", "d": "bio"}, {"s": "كيمياء", "t": "أحمد جعفر هلال", "d": "chemphys"}, {"s": "فيزياء", "t": "سعيد بسام سعيد", "d": "chemphys"}, {"s": "زراعة", "t": "حمد وليد صالح محمد", "d": "bio"}, {"s": "التربية الإسلامية", "t": "عبدالرحمن مشعل النون", "d": "islamic"}, {"s": "القرآن الكريم", "t": "عصمت عطا حامد", "d": "islamic"}, {"s": "جيولوجيا", "t": "حمد وليد صالح محمد", "d": "bio"}], "11 علمي 3": [{"s": "اللغة الإنجليزية", "t": "محمد بن عبيد مليك", "d": "english"}, {"s": "اللغة العربية", "t": "ياسر حامد موسى يوسف", "d": "arabic"}, {"s": "كيمياء", "t": "صلاح رمضان", "d": "chemphys"}, {"s": "رياضيات", "t": "ضياء أحمد نعيم الخطيب", "d": "math"}, {"s": "القرآن الكريم", "t": "أحمد رشاد السيد", "d": "islamic"}, {"s": "فيزياء", "t": "طارق توفيق مريسات", "d": "chemphys"}, {"s": "جيولوجيا", "t": "حمد وليد صالح محمد", "d": "bio"}, {"s": "أحياء", "t": "حسين عباس جوهر", "d": "bio"}, {"s": "التربية الإسلامية", "t": "أحمد رشاد السيد", "d": "islamic"}, {"s": "زراعة", "t": "حمد وليد صالح محمد", "d": "bio"}], "11 علمي 4": [{"s": "رياضيات", "t": "ضياء أحمد نعيم الخطيب", "d": "math"}, {"s": "اللغة الإنجليزية", "t": "خالد الكوت", "d": "english"}, {"s": "كيمياء", "t": "أحمد جعفر هلال", "d": "chemphys"}, {"s": "فيزياء", "t": "سعيد بسام سعيد", "d": "chemphys"}, {"s": "جيولوجيا", "t": "حمد وليد صالح محمد", "d": "bio"}, {"s": "اللغة العربية", "t": "ياسر حامد موسى يوسف", "d": "arabic"}, {"s": "القرآن الكريم", "t": "محي الدين عبدالفتاح", "d": "islamic"}, {"s": "أحياء", "t": "حسين عباس جوهر", "d": "bio"}, {"s": "التربية الإسلامية", "t": "محي الدين عبدالفتاح", "d": "islamic"}, {"s": "زراعة", "t": "حمد وليد صالح محمد", "d": "bio"}], "12 أدبي 1": [{"s": "اللغة الإنجليزية", "t": "عماد الدين سمير مسعد", "d": "english"}, {"s": "اللغة العربية", "t": "ربيع غازي رباح", "d": "arabic"}, {"s": "زراعة", "t": "حمد وليد صالح محمد", "d": "bio"}, {"s": "التربية الإسلامية", "t": "عمر بدر العدساني", "d": "islamic"}, {"s": "اللغة الفرنسية", "t": "أيوب ساير العدواني", "d": "french"}, {"s": "دستور", "t": "علي سعود البذالي", "d": "history"}, {"s": "فلسفة", "t": "عبدالرحمن عادل المنيس", "d": "philo"}, {"s": "تاريخ", "t": "عمر إبراهيم الحجي", "d": "history"}, {"s": "الإحصاء", "t": "سمير رمضان نوفل", "d": "math"}, {"s": "جغرافيا", "t": "علي سعود البذالي", "d": "history"}, {"s": "القرآن الكريم", "t": "أحمد رشاد السيد", "d": "islamic"}], "12 أدبي 2": [{"s": "اللغة العربية", "t": "علي مصطفى شبيب", "d": "arabic"}, {"s": "اللغة الفرنسية", "t": "فيصل البلوشي", "d": "french"}, {"s": "اللغة الإنجليزية", "t": "خالد الكوت", "d": "english"}, {"s": "جغرافيا", "t": "علي سعود البذالي", "d": "history"}, {"s": "التربية الإسلامية", "t": "نادر عوض التمامي", "d": "islamic"}, {"s": "تاريخ", "t": "عمر إبراهيم الحجي", "d": "history"}, {"s": "القرآن الكريم", "t": "نادر عوض التمامي", "d": "islamic"}, {"s": "زراعة", "t": "حمد وليد صالح محمد", "d": "bio"}, {"s": "الإحصاء", "t": "محمد عباس محمود", "d": "math"}, {"s": "فلسفة", "t": "عبدالرحمن عادل المنيس", "d": "philo"}, {"s": "دستور", "t": "حسين حسن الخميس", "d": "philo"}], "12 علمي 1": [{"s": "التربية الإسلامية", "t": "عبدالرحمن السعيد", "d": "islamic"}, {"s": "أحياء", "t": "حسين عباس جوهر", "d": "bio"}, {"s": "فيزياء", "t": "عبدالمنعم عبدالهادي", "d": "chemphys"}, {"s": "كيمياء", "t": "صلاح رمضان", "d": "chemphys"}, {"s": "رياضيات", "t": "عبدالقادر رزق", "d": "math"}, {"s": "اللغة العربية", "t": "أبو العزم أحمد محمد", "d": "arabic"}, {"s": "اللغة الإنجليزية", "t": "خالد الكوت", "d": "english"}, {"s": "صحة", "t": "محمد البراك", "d": "philo"}, {"s": "دستور", "t": "حسين حسن الخميس", "d": "philo"}, {"s": "القرآن الكريم", "t": "أحمد رشاد السيد", "d": "islamic"}], "12 علمي 2": [{"s": "اللغة الإنجليزية", "t": "عادل محمد لطفي صالح", "d": "english"}, {"s": "فيزياء", "t": "علي عثمان علي محسن", "d": "chemphys"}, {"s": "أحياء", "t": "حسين عباس جوهر", "d": "bio"}, {"s": "رياضيات", "t": "حسن شاكر", "d": "math"}, {"s": "اللغة العربية", "t": "أبو العزم أحمد محمد", "d": "arabic"}, {"s": "فرنسي (حر)", "t": "فيصل البلوشي", "d": "french"}, {"s": "التربية الإسلامية", "t": "عمر بدر العدساني", "d": "islamic"}, {"s": "القرآن الكريم", "t": "أحمد رشاد السيد", "d": "islamic"}, {"s": "كيمياء", "t": "صلاح رمضان", "d": "chemphys"}, {"s": "دستور", "t": "عبدالله علي عبدالعزيز", "d": "history"}], "12 علمي 3": [{"s": "فيزياء", "t": "عبدالمنعم عبدالهادي", "d": "chemphys"}, {"s": "كيمياء", "t": "أحمد صابر جاد", "d": "chemphys"}, {"s": "اللغة الإنجليزية", "t": "محمد بن عبيد مليك", "d": "english"}, {"s": "أحياء", "t": "عبدالله فاضل محمد المويل", "d": "bio"}, {"s": "اللغة العربية", "t": "ربيع غازي رباح", "d": "arabic"}, {"s": "رياضيات", "t": "صلاح صايل عامر", "d": "math"}, {"s": "دستور", "t": "عبدالله علي عبدالعزيز", "d": "history"}, {"s": "التربية الإسلامية", "t": "حسن توفيق الشريفي", "d": "islamic"}, {"s": "القرآن الكريم", "t": "حسن توفيق الشريفي", "d": "islamic"}, {"s": "فرنسي (حر)", "t": "أيوب ساير العدواني", "d": "french"}], "12 علمي 4": [{"s": "رياضيات", "t": "محمد عباس محمود", "d": "math"}, {"s": "كيمياء", "t": "حسني أحمد فواز حسن", "d": "chemphys"}, {"s": "اللغة العربية", "t": "علي مصطفى شبيب", "d": "arabic"}, {"s": "فيزياء", "t": "علي عثمان علي محسن", "d": "chemphys"}, {"s": "اللغة الإنجليزية", "t": "محمود الطنطاوي", "d": "english"}, {"s": "التربية الإسلامية", "t": "حسن توفيق الشريفي", "d": "islamic"}, {"s": "فرنسي (حر)", "t": "فيصل البلوشي", "d": "french"}, {"s": "أحياء", "t": "عبدالفتاح علي عثمان", "d": "bio"}, {"s": "دستور", "t": "حسين حسن الخميس", "d": "philo"}, {"s": "القرآن الكريم", "t": "نادر عوض التمامي", "d": "islamic"}]}, "staff": {"islamic": ["عبدالرحمن السعيد", "أحمد رشاد السيد", "عمر بدر العدساني", "نادر عوض التمامي", "أحمد السيد محمد", "علي خالد القديري", "عصمت عطا حامد", "محي الدين عبدالفتاح", "محمد عبدالرحمن الحيان", "حسن توفيق الشريفي", "عبدالرحمن مشعل النون", "سليمان منصور الهولي"], "arabic": ["أبو العزم أحمد محمد", "علي أسامة طاهر المزيدي", "زين العابدين محمود", "ربيع غازي رباح", "ياسر حامد موسى يوسف", "خالد فؤاد ياقوت عافية", "شريف جمعة عبدالحميد", "علي مصطفى شبيب", "سامح عبدالعزيز قاسم", "محمود فوزي سليم"], "english": ["عادل محمد لطفي صالح", "محمد بن عبيد مليك", "محمود رمضان محمود", "عماد الدين سمير مسعد", "خالد الكوت", "عبدالله مبارك بخيت", "شريف محمد علان", "علي نعمان الشريف", "محمد رياض الحو", "محمود الطنطاوي"], "french": ["عماد عوض عطية", "أيوب ساير العدواني", "فيصل البلوشي"], "chemphys": ["أسامة يوسف عبدالحي", "حسني أحمد فواز حسن", "صلاح معوض حسين", "أحمد جعفر هلال", "طارق توفيق مريسات", "علي عثمان علي محسن", "عبدالمنعم عبدالهادي", "أحمد صابر جاد", "سعيد بسام سعيد", "صلاح رمضان"], "bio": ["عبدالله فاضل محمد المويل", "عبدالفتاح علي عثمان", "حسين عباس جوهر", "حمد وليد صالح محمد", "تامر كمال القواس"], "math": ["عبدالله عبدالتواب الدسوقي", "سمير رمضان نوفل", "حسن شاكر", "ضياء أحمد نعيم الخطيب", "عبدالقادر رزق", "صلاح صايل عامر", "محمد عباس محمود"], "history": ["عبدالله علي عبدالعزيز", "عمر إبراهيم الحجي", "علي سعود البذالي", "علي محمد الجراف"], "philo": ["محمد البراك", "حسين حسن الخميس", "عبدالرحمن عادل المنيس", "محمد حسن السمين", "محمد موسى حبيب"]}};</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const {classes, staff} = window.DATA;
+
+/* ---------- Departments (positions taken from the hand-drawn plan; sketch px → metres) ---------- */
+const S = (x,y)=>[(x-522)/52,(y-775)/52];
+const DEPTS = {
+  math:    {name:'الرياضيات',              short:'رياضيات',  color:'#2563eb', a:[885,275], b:[1020,410]},
+  arabic:  {name:'اللغة العربية',          short:'عربي',     color:'#16a34a', a:[845,425], b:[1005,585]},
+  bio:     {name:'الأحياء والجيولوجيا',    short:'أحياء',    color:'#65a30d', a:[840,680], b:[1000,860]},
+  history: {name:'التاريخ والجغرافيا',     short:'اجتماعيات',color:'#b45309', a:[895,985], b:[1020,1175]},
+  french:  {name:'اللغة الفرنسية',         short:'فرنسي F',  color:'#db2777', a:[915,1245],b:[1030,1370]},
+  chemphys:{name:'الكيمياء والفيزياء',     short:'كيمياء وفيزياء',color:'#7c3aed', a:[190,335], b:[30,625]},
+  english: {name:'اللغة الإنجليزية',       short:'إنجليزي E',color:'#dc2626', a:[205,655], b:[45,940]},
+  philo:   {name:'الفلسفة وعلم النفس',     short:'فلسفة',    color:'#0891b2', a:[225,960], b:[90,1210]},
+  islamic: {name:'التربية الإسلامية',      short:'إسلامية',  color:'#0e7c66', a:[255,1225],b:[110,1470]},
+};
+const OFFMAP = {pe:'التربية البدنية',art:'التربية الفنية',computer:'الحاسوب',music:'الموسيقى',library:'المكتبات'};
+const deptName = d => DEPTS[d]?.name || OFFMAP[d] || d;
+const deptColor = d => DEPTS[d]?.color || '#94a3b8';
+
+/* ---------- Scene ---------- */
+const host = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+host.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#dfe7ef');
+scene.fog = new THREE.Fog('#dfe7ef', 45, 90);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 200);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = .08;
+controls.maxPolarAngle = Math.PI*0.47; controls.minDistance = 6; controls.maxDistance = 55;
+controls.target.set(0,0,0);
+
+scene.add(new THREE.HemisphereLight('#ffffff','#9aa7b5',1.25));
+const sun = new THREE.DirectionalLight('#ffffff',1.6);
+sun.position.set(-10,22,12); sun.castShadow = true;
+sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-20,right:20,top:20,bottom:-20,near:1,far:60});
+scene.add(sun);
+
+const mat = (c,o={}) => new THREE.MeshStandardMaterial({color:c, roughness:.75, metalness:0, ...o});
+function box(w,h,d,m,x,y,z){const g=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);g.position.set(x,y,z);g.castShadow=g.receiveShadow=true;scene.add(g);return g;}
+
+// Hall shell: W=20 (x −10..10), L=30 (z −15..15)
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(21,31), mat('#f3efe7'));
+floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
+// floor tile lines
+const grid = new THREE.GridHelper(30,30,'#e3dccf','#e3dccf'); grid.scale.set(0.7,1,1); grid.position.y=0.005; scene.add(grid);
+// aisle carpet (center strip drawn in plan)
+const aisle = new THREE.Mesh(new THREE.PlaneGeometry(4.4,19.5), mat('#c9d6e3'));
+aisle.rotation.x=-Math.PI/2; aisle.position.set(0.5,0.01,5.0); aisle.receiveShadow=true; scene.add(aisle);
+// walls (low, so the inside stays visible)
+const wallM = mat('#ffffff',{transparent:true,opacity:.55});
+box(21,1.6,0.2,wallM,0,0.8,-15.5); box(0.2,1.6,31,wallM,-10.5,0.8,0); box(0.2,1.6,31,wallM,10.5,0.8,0);
+box(7,1.6,0.2,wallM,-7,0.8,15.5); box(7,1.6,0.2,wallM,7,0.8,15.5);
+
+// Stage + screen + stairs
+const [sx1,sz1]=S(165,40),[sx2,sz2]=S(870,280);
+const stageW=sx2-sx1, stageD=sz2-(-15.4);
+box(stageW,1.0,stageD,mat('#8b5e3c'),(sx1+sx2)/2,0.5,-15.4+stageD/2);
+box(stageW,0.06,0.25,mat('#c08a5b'),(sx1+sx2)/2,1.0,sz2-0.12);
+const [scx1]=S(220,80),[scx2]=S(790,80);
+const screen = box(scx2-scx1,3.2,0.15,mat('#0f172a',{roughness:.3}),(scx1+scx2)/2,2.9,-15.2);
+box(scx2-scx1-.3,2.9,0.02,mat('#1e3a5f',{emissive:'#1e3a5f',emissiveIntensity:.6}),(scx1+scx2)/2,2.9,-15.1);
+function stairs(edgeX,dir){ const zc=-15.4+stageD*0.55; for(let i=0;i<4;i++){ const h=1.0-0.25*i; box(0.55,h,2.6,mat(i%2?'#a47148':'#b07d52'),edgeX+dir*(0.275+i*0.55),h/2,zc);} }
+stairs(sx1,-1); stairs(sx2,1);
+
+// Text sprites (canvas, RTL)
+function labelTexture(text, sub, bg, fg='#fff'){
+  const c=document.createElement('canvas'); const x=c.getContext('2d');
+  const W=1024,H= sub?300:200; c.width=W;c.height=H;
+  x.font='800 92px Cairo'; const tw=Math.min(W-40, x.measureText(text).width+120);
+  const r=46, left=(W-tw)/2;
+  x.fillStyle=bg; x.beginPath(); x.roundRect(left,10,tw,H-40,r); x.fill();
+  x.beginPath(); x.moveTo(W/2-26,H-31); x.lineTo(W/2+26,H-31); x.lineTo(W/2,H-4); x.fill();
+  x.fillStyle=fg; x.direction='rtl'; x.textAlign='center'; x.textBaseline='middle';
+  x.fillText(text,W/2, sub? 98:(H-30)/2+4);
+  if(sub){ x.font='700 58px Cairo'; x.globalAlpha=.92; x.fillText(sub,W/2,205); }
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=4; return {t,aspect:W/H};
+}
+function sprite(text,sub,bg,scale=4.2,fg){
+  const {t,aspect}=labelTexture(text,sub,bg,fg);
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true,sizeAttenuation:false}));
+  const k=scale*0.036; s.scale.set(k,k/aspect,1); s.renderOrder=10; scene.add(s);
+  s.userData.redraw=()=>{const r=labelTexture(text,sub,bg,fg); s.material.map.dispose(); s.material.map=r.t; s.material.needsUpdate=true;};
+  return s;
+}
+
+// Seat number + name tags
+function numTex(n,color){ const c=document.createElement('canvas'); c.width=c.height=128; const x=c.getContext('2d');
+  x.fillStyle=color; x.beginPath(); x.arc(64,64,60,0,Math.PI*2); x.fill(); x.fillStyle='#fff'; x.font='800 70px Cairo'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(n,64,70);
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t; }
+function nameSprite(text,color){
+  const draw=()=>{ const c=document.createElement('canvas'); const x=c.getContext('2d'); x.font='800 64px Cairo';
+    const w=Math.ceil(x.measureText(text).width)+70; c.width=w; c.height=110; x.font='800 64px Cairo';
+    x.fillStyle='#fff'; x.beginPath(); x.roundRect(3,3,w-6,104,30); x.fill(); x.strokeStyle=color; x.lineWidth=8; x.stroke();
+    x.fillStyle='#14213d'; x.direction='rtl'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(text,w/2,60);
+    const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return {t,a:w/110}; };
+  const {t,a}=draw(); const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));
+  s.scale.set(.42*a,.42,1); s.renderOrder=12; scene.add(s);
+  s.userData.redraw=()=>{const r=draw(); s.material.map.dispose(); s.material.map=r.t; s.scale.set(.63*r.a,.63,1); s.material.needsUpdate=true;};
+  return s; }
+
+// Chairs
+const chairM = mat('#334155'), chairSeat = mat('#475569');
+function chair(x,z,rot){
+  const g=new THREE.Group();
+  const seat=new THREE.Mesh(new THREE.BoxGeometry(.45,.06,.45),chairSeat); seat.position.y=.45;
+  const back=new THREE.Mesh(new THREE.BoxGeometry(.45,.5,.06),chairM); back.position.set(0,.72,-.2);
+  [[-.19,-.19],[.19,-.19],[-.19,.19],[.19,.19]].forEach(([a,b])=>{const l=new THREE.Mesh(new THREE.BoxGeometry(.04,.45,.04),chairM);l.position.set(a,.225,b);g.add(l);});
+  g.add(seat,back); g.position.set(x,0,z); g.rotation.y=rot;
+  g.traverse(o=>{if(o.isMesh){o.castShadow=true;}}); scene.add(g); return g;
+}
+
+// Department tables
+const hallCenterX = 0;
+for (const [id,d] of Object.entries(DEPTS)){
+  const [ax,az]=S(...d.a),[bx,bz]=S(...d.b);
+  const cx=(ax+bx)/2, cz=(az+bz)/2, len=Math.hypot(bx-ax,bz-az);
+  const ang=Math.atan2(bx-ax,bz-az); // rotation so table long axis follows the sketch
+  const grp=new THREE.Group(); grp.position.set(cx,0,cz); grp.rotation.y=ang; scene.add(grp);
+  const depth=.9;
+  const top=new THREE.Mesh(new THREE.BoxGeometry(depth,.08,len),mat('#f8fafc')); top.position.y=.76;
+  const cloth=new THREE.Mesh(new THREE.BoxGeometry(depth+.04,.62,len+.04),mat(d.color,{roughness:.9}));
+  cloth.position.y=.42;
+  [top,cloth].forEach(m=>{m.castShadow=m.receiveShadow=true;grp.add(m);});
+  // which side faces the aisle?
+  const nx=Math.cos(ang), nz=-Math.sin(ang); // local +x in world
+  const toward = Math.sign((hallCenterX-cx)*nx + (0)*nz) || 1;
+  // one teacher seat per teacher, in the order of the department list (seat 1 = stage end)
+  const names = staff[id] || [];
+  const n = Math.max(1, names.length), pitch=(len-.3)/n, cs=Math.min(1, pitch/0.55);
+  const W=(px,lz)=>[cx+px*Math.cos(ang)+lz*Math.sin(ang), cz-px*Math.sin(ang)+lz*Math.cos(ang)];
+  d.seats=[];
+  for(let i=0;i<n;i++){
+    const lz=-(len-.3)/2 + pitch*(i+.5);
+    const [wx,wz]=W(-toward*(depth/2+.42),lz);
+    const ch=chair(wx,wz,ang+(toward>0?Math.PI/2:-Math.PI/2)); ch.scale.setScalar(cs);
+    const [vx,vz]=W(toward*(depth/2+.42),lz);
+    if(pitch>=.5 || i%2===0){ const pc=chair(vx,vz,ang+(toward>0?-Math.PI/2:Math.PI/2)); pc.scale.setScalar(cs); }
+    // seat number on the table top (facing up)
+    const [tx,tz]=W(0,lz);
+    const num=new THREE.Mesh(new THREE.PlaneGeometry(.34,.34),new THREE.MeshBasicMaterial({map:numTex(i+1,d.color),transparent:true}));
+    num.rotation.x=-Math.PI/2; num.rotation.z=ang+(toward>0?Math.PI/2:-Math.PI/2); num.position.set(tx,.81,tz); scene.add(num);
+    const [fx2,fz2]=W(toward*(depth/2+1.25),lz);
+    const tag=nameSprite(`${i+1}. ${names[i]||''}`, d.color); tag.position.set(wx,1.9,wz); tag.visible=false; tag.scale.multiplyScalar(1.5);
+    const nb=new THREE.Sprite(new THREE.SpriteMaterial({map:numTex(i+1,d.color),depthTest:false,transparent:true})); nb.scale.set(.36,.36,1); nb.position.set(wx,1.15,wz); nb.renderOrder=11; nb.visible=false; scene.add(nb);
+    d.seats.push({name:names[i], chair:ch, pos:new THREE.Vector3(wx,0,wz), front:new THREE.Vector3(fx2,0,fz2), tag, nb});
+  }
+  // front point (where parent stands)
+  const fx=cx+toward*(depth/2+1.3)*Math.cos(ang), fz=cz-toward*(depth/2+1.3)*Math.sin(ang);
+  d.front=new THREE.Vector3(fx,0,fz); d.center=new THREE.Vector3(cx,0,cz); d.cloth=cloth; d.len=len;
+  d.label=sprite(d.name, staff[id]?`${staff[id].length} معلم`:'', d.color, 4.0);
+  d.label.position.set(cx,2.5,cz);
+  // beacon
+  const bm=new THREE.MeshBasicMaterial({color:d.color,transparent:true,opacity:.0,depthWrite:false});
+  const beacon=new THREE.Mesh(new THREE.CylinderGeometry(.9,.9,9,32,1,true),bm);
+  beacon.position.set(cx,4.5,cz); scene.add(beacon); d.beacon=beacon;
+  const ringM=new THREE.MeshBasicMaterial({color:d.color,transparent:true,opacity:0,side:THREE.DoubleSide});
+  const ring=new THREE.Mesh(new THREE.RingGeometry(1.2,1.55,48),ringM); ring.rotation.x=-Math.PI/2; ring.position.set(cx,.03,cz); scene.add(ring); d.ring=ring;
+}
+
+// Round tables with chairs in the aisle (waiting / hospitality)
+[[535,480],[550,815],[550,1100]].forEach(([px,py])=>{
+  const [x,z]=S(px,py);
+  const t=new THREE.Mesh(new THREE.CylinderGeometry(1.0,1.0,.06,40),mat('#ffffff')); t.position.set(x,.76,z);
+  const leg=new THREE.Mesh(new THREE.CylinderGeometry(.08,.3,.74,16),mat('#94a3b8')); leg.position.set(x,.37,z);
+  [t,leg].forEach(m=>{m.castShadow=m.receiveShadow=true;scene.add(m);});
+  for(let i=0;i<7;i++){const a=i/7*Math.PI*2; chair(x+Math.sin(a)*1.45,z+Math.cos(a)*1.45,a+Math.PI);}
+});
+{ const s=sprite('منطقة الانتظار',null,'#475569',3.0); const [x,z]=S(545,815); s.position.set(x,2.2,z); }
+
+// Entrance + reception desk (bottom of plan)
+const [ex1,ez]=S(350,1440),[ex2]=S(745,1440);
+const gx=(ex1+ex2)/2, gw=ex2-ex1, gz=14.6;
+box(.35,2.6,.35,mat('#0e7c66'),ex1,1.3,gz); box(.35,2.6,.35,mat('#0e7c66'),ex2,1.3,gz); box(gw+.35,.35,.35,mat('#0e7c66'),gx,2.6,gz);
+{ const mt=new THREE.Mesh(new THREE.PlaneGeometry(gw-.4,1.8),mat('#0e7c66',{roughness:1})); mt.rotation.x=-Math.PI/2; mt.position.set(gx,.012,gz); scene.add(mt); }
+const ENTRY=new THREE.Vector3(gx,0,14.4);
+{ const s=sprite('المسرح',null,'#8b5e3c',3.0); s.position.set(0,2.0,-12.6); }
+{ const s=sprite('المدخل',null,'#14213d',2.4); s.position.set(gx,3.3,gz); }
+// "you are here" marker
+const youM=new THREE.Mesh(new THREE.ConeGeometry(.35,.8,24),mat('#f59e0b',{emissive:'#f59e0b',emissiveIntensity:.4}));
+youM.rotation.x=Math.PI; youM.position.set(ENTRY.x,1.2,13.6); scene.add(youM);
+{ const s=sprite('أنت هنا',null,'#f59e0b',2.2,'#111'); s.position.set(ENTRY.x,2.0,13.6); }
+
+/* ---------- Path guidance ---------- */
+const pathGroup=new THREE.Group(); scene.add(pathGroup);
+const arrowGeo=new THREE.ConeGeometry(.22,.5,3); arrowGeo.rotateX(Math.PI/2);
+let pathCurve=null, arrows=[];
+function showPath(d,target){ target=target||d.front;
+  pathGroup.clear(); arrows=[];
+  const side=Math.sign(target.x-0.4)||1, laneX=0.45+side*2.25, fz=target.z;
+  const p=[ENTRY.clone(), new THREE.Vector3(ENTRY.x,0,12.6), new THREE.Vector3(laneX,0,11.2)];
+  if(fz<10.2) p.push(new THREE.Vector3(laneX,0,fz+0.9));
+  p.push(target.clone());
+  pathCurve=new THREE.CatmullRomCurve3(p,false,'centripetal',.2);
+  const tube=new THREE.Mesh(new THREE.TubeGeometry(pathCurve,120,.07,8,false),new THREE.MeshBasicMaterial({color:d.color,transparent:true,opacity:.55}));
+  tube.position.y=.05; pathGroup.add(tube);
+  const L=pathCurve.getLength(), n=Math.floor(L/1.1);
+  const am=new THREE.MeshBasicMaterial({color:d.color});
+  for(let i=0;i<n;i++){const a=new THREE.Mesh(arrowGeo,am); a.userData.u=i/n; pathGroup.add(a); arrows.push(a);}
+  const end=new THREE.Mesh(new THREE.CylinderGeometry(.45,.45,.04,32),new THREE.MeshBasicMaterial({color:d.color}));
+  end.position.copy(target).setY(.03); pathGroup.add(end);
+}
+
+/* ---------- Selection & camera ---------- */
+let selected=null, flight=null;
+function flyTo(pos,target,ms=1100){
+  flight={p0:camera.position.clone(),t0:controls.target.clone(),p1:pos,t1:target,start:performance.now(),ms};
+}
+const wide=()=>innerWidth>=900, port=()=>innerWidth/innerHeight<0.8;
+const home=()=> wide()? [new THREE.Vector3(3,21,26),new THREE.Vector3(3,0,1)] : port()? [new THREE.Vector3(0,40,30),new THREE.Vector3(0,0,3.5)] : [new THREE.Vector3(0,22,27),new THREE.Vector3(0,0,1)];
+const VIEW3D=()=>{const [a,b]=home(); flyTo(a,b);};
+const VIEWTOP=()=>flyTo(new THREE.Vector3(wide()?3:0, port()?58:38, port()?4.01:0.01),new THREE.Vector3(wide()?3:0,0,port()?4:0));
+const seatMark=new THREE.Mesh(new THREE.ConeGeometry(.22,.5,20),new THREE.MeshStandardMaterial({color:'#f59e0b',emissive:'#f59e0b',emissiveIntensity:.6}));
+seatMark.rotation.x=Math.PI; seatMark.visible=false; scene.add(seatMark);
+const nrm=s=>String(s||'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/\s+/g,'');
+function seatOf(id,teacher){ const d=DEPTS[id]; if(!d||!teacher) return -1; return d.seats.findIndex(s=>nrm(s.name)===nrm(teacher)); }
+function selectDept(id, teacher){
+  const d=DEPTS[id]; if(!d) return;
+  for(const [k,o] of Object.entries(DEPTS)){ o.cloth.material.emissive.set(k===id?o.color:'#000'); o.cloth.material.emissiveIntensity=k===id?.35:0; o.label.material.opacity=(k===id)?1:.35; o.seats.forEach(s=>{s.tag.visible=false; s.nb.visible=(k===id);}); }
+  const si=seatOf(id,teacher), seat=si>=0?d.seats[si]:null;
+  selected=id; showPath(d, seat?seat.front:d.front);
+  seatMark.visible=!!seat; if(seat){ seatMark.userData.base=seat.pos.clone(); }
+  if(seat){ seat.tag.visible=true; seat.nb.visible=false; }
+  const c=seat?seat.pos:d.center;
+  const mid=ENTRY.clone().lerp(c,.55); mid.x=c.x*0.45; if(wide()) mid.x+=2.5; if(port()) mid.z-=3.0;
+  const span=Math.max(13, ENTRY.distanceTo(c)); const k=port()?1.35:0.9;
+  flyTo(mid.clone().add(new THREE.Vector3(0, (span*1.05+4)*k, (span*0.55+4)*k)), mid);
+  const tst=document.getElementById('toast');
+  tst.querySelector('.dot').style.background=d.color;
+  tst.querySelector('b').textContent= seat? `${seat.name} — مقعد ${si+1}` : d.name;
+  tst.querySelector('small').textContent= seat? `طاولة ${d.name} · المقعد رقم ${si+1} · اتبع الأسهم` : `${d.seats.length} معلمين · المقاعد مرقمة من جهة المسرح`;
+  tst.classList.add('show');
+  if(innerWidth<900) document.getElementById('sheet').classList.add('min');
+  try{ history.replaceState(null,'','#d-'+id+(seat?'-'+(si+1):'')); }catch(e){}
+}
+function clearSel(){
+  selected=null; pathGroup.clear(); arrows=[];
+  for(const o of Object.values(DEPTS)){o.cloth.material.emissive.set('#000');o.label.material.opacity=1;o.beacon.material.opacity=0;o.ring.material.opacity=0;o.seats.forEach(s=>{s.tag.visible=false;s.nb.visible=false;});} seatMark.visible=false;
+  document.getElementById('toast').classList.remove('show');
+}
+document.querySelector('#toast button').onclick=()=>{clearSel();VIEW3D();};
+
+// tap on a table
+const ray=new THREE.Raycaster(), ptr=new THREE.Vector2(); let downAt=null;
+renderer.domElement.addEventListener('pointerdown',e=>downAt=[e.clientX,e.clientY]);
+renderer.domElement.addEventListener('pointerup',e=>{
+  if(!downAt||Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1])>6) return;
+  ptr.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1); ray.setFromCamera(ptr,camera);
+  const objs=Object.values(DEPTS).flatMap(d=>[d.cloth,d.label]);
+  const hit=ray.intersectObjects(objs,false)[0];
+  if(hit){ const id=Object.keys(DEPTS).find(k=>DEPTS[k].cloth===hit.object||DEPTS[k].label===hit.object); selectDept(id); setTab('dept',id); }
+});
+
+/* ---------- UI ---------- */
+const body=document.getElementById('body');
+const classNames=Object.keys(classes);
+const grades=[...new Set(classNames.map(c=>c.match(/^\d+/)[0]))];
+let state={tab:'class',grade:null,cls:null,q:''};
+try{ const s=JSON.parse(localStorage.getItem('pt-hall')||'{}'); if(s.cls&&classes[s.cls]){state.cls=s.cls;state.grade=s.cls.match(/^\d+/)[0];} }catch(e){}
+
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function rowHTML(sub,teacher,dep){
+  const si=seatOf(dep,teacher), col=deptColor(dep);
+  return `<div class="row" data-d="${dep}" data-t="${esc(teacher)}"><div class="dot" style="background:${col}"></div>
+  <div class="m">${sub?`<div class="s">${esc(sub)}</div>`:''}<div class="t">${esc(teacher)}</div><div class="s">${esc(deptName(dep))}${si>=0?` · مقعد ${si+1}`:''}</div></div>
+  <span class="go" style="background:${col}">📍 المكان</span></div>`;
+}
+const ORDER=['islamic','arabic','english','french','math','chemphys','bio','history','philo','computer','pe','art','music','library'];
+function render(){
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===state.tab));
+  let h='';
+  if(state.tab==='class'){
+    h+=`<div class="lbl">اختر الصف</div><div class="chips">${grades.map(g=>`<button class="chip ${state.grade===g?'on':''}" data-g="${g}">الصف ${g}</button>`).join('')}</div>`;
+    if(state.grade){
+      h+=`<div class="chips">${classNames.filter(c=>c.startsWith(state.grade)).map(c=>`<button class="chip ${state.cls===c?'on':''}" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div>`;
+    }
+    if(state.cls){
+      const list=classes[state.cls].filter(r=>DEPTS[r.d]).sort((a,b)=>ORDER.indexOf(a.d)-ORDER.indexOf(b.d));
+      h+=`<div class="lbl">معلمو الفصل ${esc(state.cls)} — اضغط على المعلم لعرض طاولته</div>`+list.map(r=>rowHTML(r.s,r.t,r.d)).join('');
+    } else h+=`<div class="empty">اختر صف ابنك وفصله لعرض معلميه وأماكن طاولاتهم في القاعة</div>`;
+  }
+  if(state.tab==='dept'){
+    h+=Object.entries(DEPTS).map(([id,d])=>`<div class="row ${state.open===id?'sel':''}" data-d="${id}"><div class="dot" style="background:${d.color}"></div><div class="m"><div class="t">${d.name}</div><div class="s">${staff[id]?.length||0} معلم</div></div><span class="go" style="background:${d.color}">📍 المكان</span></div>`
+      + (state.open===id? `<div class="seats">${(staff[id]||[]).map((t,i)=>`<button class="seat" data-sd="${id}" data-t="${esc(t)}"><i style="background:${d.color}">${i+1}</i>${esc(t)}</button>`).join('')}</div>`:'')).join('');
+    h+=`<div class="note">المقاعد مرقمة على كل طاولة بدءاً من الطرف القريب من المسرح.</div>`;
+  }
+  if(state.tab==='search'){
+    h+=`<input type="search" id="q" placeholder="اكتب اسم المعلم…" value="${esc(state.q)}">`;
+    const n=s=>s.replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/\s+/g,'');
+    const q=n(state.q.trim());
+    if(q.length>=2){
+      const res=[]; for(const [dep,names] of Object.entries(staff)) if(DEPTS[dep]) for(const t of names) if(n(t).includes(q)) res.push({t,dep});
+      h+= res.length? res.map(r=>rowHTML('',r.t,r.dep)).join('') : `<div class="empty">لا توجد نتائج</div>`;
+    } else h+=`<div class="empty">اكتب حرفين على الأقل من اسم المعلم</div>`;
+  }
+  body.innerHTML=h;
+  const qi=document.getElementById('q'); if(qi){ qi.oninput=e=>{state.q=e.target.value; const pos=e.target.selectionStart; render(); const q2=document.getElementById('q'); q2.focus(); q2.setSelectionRange(pos,pos);} ; }
+}
+function setTab(t,open){ state.tab=t; if(open) state.open=open; render(); }
+document.querySelector('.tabs').onclick=e=>{const b=e.target.closest('button'); if(b) setTab(b.dataset.tab);};
+body.onclick=e=>{
+  const g=e.target.closest('[data-g]'); if(g){state.grade=g.dataset.g; state.cls=null; render(); return;}
+  const c=e.target.closest('[data-c]'); if(c){state.cls=c.dataset.c; try{localStorage.setItem('pt-hall',JSON.stringify({cls:state.cls}))}catch(_){}; render(); return;}
+  const sb=e.target.closest('.seat'); if(sb){ selectDept(sb.dataset.sd, sb.dataset.t); return; }
+  const r=e.target.closest('.row'); if(r){ const d=r.dataset.d;
+    if(state.tab==='dept'){ state.open = state.open===d? null:d; render(); }
+    if(DEPTS[d]) selectDept(d, r.dataset.t||null);
+    if(false){ const tst=document.getElementById('toast'); tst.querySelector('.dot').style.background='#94a3b8'; tst.querySelector('b').textContent=r.dataset.t||deptName(d); tst.querySelector('small').textContent=`${deptName(d)} — ليس له طاولة في القاعة، يُرجى السؤال عند المدخل`; tst.classList.add('show'); clearPathOnly(); }
+  }
+};
+function clearPathOnly(){ pathGroup.clear(); arrows=[]; }
+const sheet=document.getElementById('sheet');
+document.querySelector('.grip').onclick=()=>sheet.classList.toggle('min');
+document.getElementById('b3d').onclick=()=>{VIEW3D();tog('b3d');};
+document.getElementById('btop').onclick=()=>{VIEWTOP();tog('btop');};
+document.getElementById('breset').onclick=()=>{clearSel();VIEW3D();tog('b3d');sheet.classList.remove('min');};
+function tog(id){['b3d','btop'].forEach(i=>document.getElementById(i).classList.toggle('on',i===id));}
+
+/* ---------- Loop ---------- */
+function resize(){ renderer.setSize(innerWidth,innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); }
+addEventListener('resize',resize);
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const clock=new THREE.Clock();
+function loop(){
+  const t=clock.getElapsedTime();
+  if(flight){ const k=Math.min(1,(performance.now()-flight.start)/flight.ms), e=ease(k);
+    camera.position.lerpVectors(flight.p0,flight.p1,e); controls.target.lerpVectors(flight.t0,flight.t1,e); if(k>=1) flight=null; }
+  if(seatMark.visible){ const b=seatMark.userData.base; seatMark.position.set(b.x,1.3+Math.sin(t*4)*.12,b.z); }
+  youM.position.y=1.1+Math.sin(t*3)*.15;
+  if(selected){ const d=DEPTS[selected];
+    d.beacon.material.opacity=.16+.08*Math.sin(t*4); d.ring.material.opacity=.9;
+    const s=1+((t*0.8)%1)*.6; d.ring.scale.set(s,s,s); d.ring.material.opacity=1-((t*0.8)%1);
+    d.label.position.y=2.6+Math.sin(t*3)*.15;
+  }
+  if(pathCurve){ arrows.forEach(a=>{ const u=(a.userData.u+t*0.08)%1; const p=pathCurve.getPointAt(u), q=pathCurve.getPointAt(Math.min(1,u+.01)); a.position.set(p.x,.12,p.z); a.lookAt(q.x,.12,q.z); }); }
+  controls.update(); renderer.render(scene,camera); requestAnimationFrame(loop);
+}
+
+// fonts must be ready before canvas labels are drawn → labels are created above synchronously,
+// so we redraw them once Cairo is loaded.
+{const [a,b]=home(); camera.position.copy(a); controls.target.copy(b);}
+loop(); render();
+document.fonts.load('800 92px Cairo').then(()=>document.fonts.ready).then(()=>{
+  scene.traverse(o=>{ if(o.isSprite && o.userData.redraw) o.userData.redraw(); });
+}).finally(()=>{ const l=document.getElementById('loading'); l.style.opacity=0; setTimeout(()=>l.remove(),400);
+  const m=location.hash.match(/^#d-([a-z]+)(?:-(\d+))?/); if(m&&DEPTS[m[1]]) selectDept(m[1], m[2]? DEPTS[m[1]].seats[+m[2]-1]?.name : null); });
+</script>
+</body>
+</html>
